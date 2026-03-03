@@ -1,4 +1,4 @@
-const authModel = require("../model/authModel.js");
+const User = require("../../model/userModel/userSchema.js");
 const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
@@ -8,38 +8,6 @@ dotenv.config();
 
 
 const { generateAuthToken, generateRefreshToken } = utilsToken;
-
-const signup = async (req, res) => {
-    try{
-  const { username, email, password } = req.body;
-
-
-  // Check existing user
-  const [existing] = await authModel.findOne(email);
-  if (existing) {
-    return res.status(400).json({ message: "User already exists" });
-  }
-
-  //hashed password
-  const genSalt = 10;
-  const hashedPassword = await bcrypt.hash(password, genSalt);
-
-  //data insertion in table
-  const result = await authModel.create(username, email, hashedPassword);
-
-  return res.status(200).json({
-    success: true,
-    message:
-      "User registered successfully"
-  });
-}
-catch(err){
-    res.status(500).json({
-        success:false,
-        message:err.message
-    })
-}
-};
 
 
 
@@ -263,8 +231,9 @@ const refreshAccessToken = async (req, res) => {
 };
 
 module.exports = {
-  signup,
-  login,
+  
+  studentLogin,
+  adminLogin,
   logout,
   forgetPassword,
   resetPassword,

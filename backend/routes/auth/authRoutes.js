@@ -1,9 +1,8 @@
-const authController = require("../controller/authController.js")
+const authController = require("../../controller/auth/authControllerjs")
 const express = require("express")
 const router = express.Router();
 
 const{
-    signup,
     studentLogin,
     adminLogin,
     logout,
@@ -12,7 +11,7 @@ const{
     refreshAccessToken
 } = authController;
 
-router.post ("/signup",signup);
+
 router.post("/login/student",studentLogin);
 router.post("/login/admin",adminLogin);
 router.post("/logout",logout);
