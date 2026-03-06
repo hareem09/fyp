@@ -9,7 +9,39 @@ dotenv.config();
 
 const { generateAuthToken, generateRefreshToken } = utilsToken;
 
+const createDefaultAdmin = async () => {
+  try {
+    // Check if admin already exists
+    const adminExists = await User.findOne({ role: 'admin' });
 
+    if (adminExists) {
+      console.log('✅ Admin already exists — skipping creation');
+      return;
+    }
+
+    // Hash default password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@1234', salt);
+
+    // Create admin
+    await User.create({
+      name: 'Super Admin',
+      email: process.env.ADMIN_DEFAULT_EMAIL || 'admin@smartattendance.com',
+      password: hashedPassword,
+      role: 'admin',
+      accountStatus: 'active',
+      enrollmentStatus: 'not_enrolled'
+    });
+
+    console.log('✅ Default admin created successfully');
+    console.log(`📧 Email   : ${process.env.ADMIN_DEFAULT_EMAIL || 'admin@smartattendance.com'}`);
+    console.log(`🔑 Password: ${process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@1234'}`);
+    console.log('⚠️  Please change the default password after first login');
+
+  } catch (error) {
+    console.error('❌ Failed to create default admin:', error.message);
+  }
+};
 
 const studentLogin = async (req, res) => {
   try {
@@ -231,7 +263,7 @@ const refreshAccessToken = async (req, res) => {
 };
 
 module.exports = {
-  
+  createDefaultAdmin,
   studentLogin,
   adminLogin,
   logout,

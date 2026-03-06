@@ -13,7 +13,8 @@ const {
         deleteUser,
         approveUser,
         toggleUserStatus,
-        importStudents
+        importStudents,
+        createAndInviteStudent
 } = adminController;
 
 router.get('/users', getAllUsers);
@@ -27,5 +28,6 @@ router.post('/reject',rejectEnrollment);
 router.post('/enroll',approveEnrollment);
 router.post('/toggle-status/:id', toggleUserStatus);
 router.post('/import-students', importStudents);
+router.post('/invite-student', createAndInviteStudent);
 
 module.exports = router;

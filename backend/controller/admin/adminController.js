@@ -280,6 +280,51 @@ const getSystemOverview = async (req, res) => {
   }
 };
 
+const createAndInviteStudent = async (req, res) => {
+  try {
+    const { name, email, rollNo, department, semester, batch } = req.body;
+
+   // 1. Generate temporary password
+    const tempPassword = crypto.randomBytes(6).toString("hex");
+
+    // 2. Hash password
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      rollNo,
+      department,
+      semester,
+      batch,
+      role: 'student',
+      password: hashedPassword
+    });
+
+    // 4. Send email
+    await sendMail({
+      to: email,
+      subject: "Your Student Account Access",
+      html: `
+        <h3>Hello ${name},</h3>
+        <p>Your Student account has been created.</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+        <p>Please change your password after login.</p>
+      `,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Invite sent to ${email}`,
+      inviteUrl  // remove in production
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
@@ -291,5 +336,6 @@ module.exports = {
     deleteUser,
     approveUser,
     toggleUserStatus,
-    importStudents
+    importStudents,
+    createAndInviteStudent
 }
