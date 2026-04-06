@@ -12,6 +12,7 @@ function Aside() {
         <ul className=" underline text-amber-600 ml-0 md:ml-2">
             <li><Link to='/students' >Students</Link></li>
             <li><Link to='/teachers'>Teachers</Link></li>
+            <li><Link to='/admin/create-invite'>Create Invite</Link></li>
         </ul>
     </div>
    </>

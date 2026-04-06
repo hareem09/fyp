@@ -1,7 +1,7 @@
-import React from "react";
+
 import { useState } from "react";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -9,6 +9,7 @@ function AdminLogin() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     if (e.target.name === "email") {
@@ -23,11 +24,13 @@ function AdminLogin() {
         setError(null);
         setSuccess(false);
     try {
-      const res = await axios.post("/login/admin", { email, password });
+      const res = await axios.post("http://localhost:3000/api/auth/login/admin", { email, password },{ withCredentials: true });
+      localStorage.setItem("token", res.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(res.data.data));
       console.log(res.data);
            setSuccess(true);
       alert("Login successful!");
-      return <Navigate to="/dashboard" />;
+       navigate('/admin/dashboard');
     } catch (err) {
       console.error(err);
       setError("Invalid email or password");
@@ -38,11 +41,9 @@ function AdminLogin() {
   return (
     <>
       <h1>AdminLogin</h1>
-      <body className="bg-gray-100 h-screen flex items-center justify-center">
+      <div className="bg-gray-100 h-screen flex items-center justify-center">
         <form
-          action="/login"
-          method="POST"
-          className="border-2  border-black p-1.5"
+          className=""
           onSubmit={handleSubmit}
         >
           <div className="mb-4">
@@ -89,7 +90,7 @@ function AdminLogin() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-      </body>
+      </div>
     </>
   );
 }

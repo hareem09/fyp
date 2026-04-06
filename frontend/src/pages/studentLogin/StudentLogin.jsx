@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import axios from 'axios'
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 function studentLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
  
  const handleChange = (e) => {
         if (e.target.name === 'email') {
@@ -21,11 +22,13 @@ function studentLogin() {
      setError(null);
      setSuccess(false);
      try{
-      const res = await axios.post('/login/student', { email, password });
+      const res = await axios.post('http://localhost:3000/api/auth/login/student', { email, password }, { withCredentials: true });
       console.log(res.data);
+       localStorage.setItem("token", res.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(res.data.data));
       setSuccess(true);
       alert('Login successful!');
-      return <Navigate to="/dashboard" />;
+      navigate('/student/dashboard');
       }catch(err){
         console.error(err);
         setError("Invalid email or password");
@@ -36,7 +39,7 @@ function studentLogin() {
   return (
     <>
     <h1>StudentLogin</h1>
-    <body className='bg-gray-100 h-screen flex items-center justify-center'>
+    <div className='bg-gray-100 h-screen flex items-center justify-center'>
       <form action="/login" method="POST" className='border-2  border-violet-300 p-9 rounded-2xl' onSubmit={handleSubmit}>
         <div className="mb-4">
           <label htmlFor="email" className="block text-gray-700 dark:text-white/60 mb-2">
@@ -49,7 +52,6 @@ function studentLogin() {
             value={email}
             onChange={handleChange}
             className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-            placeholder="name@company.com"
             required
           />
         </div>
@@ -76,7 +78,7 @@ function studentLogin() {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-    </body>
+    </div>
     </>
   )
 }

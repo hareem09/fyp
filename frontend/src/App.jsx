@@ -17,6 +17,7 @@ import StudentProfile     from './pages/studentProfile/StudentProfile';
 // Admin
 import AdminDashboard      from './pages/admin/adminDashboard/AdminDashboard';
 import StudentManagement   from './pages/admin/studentManagement/StudentManagement';
+import CreateInvite from './pages/admin/createInvite/CreateInvite';
 // import EnrollmentApprovals from './pages/admin/enrollment/EnrollmentApprovals';
 import AttendanceManagement from './pages/admin/attendenceManagement/AttendenceManagement';
 import GeofenceConfig      from './pages/admin/geofenceConfig/GeofenceConfig';
@@ -28,7 +29,7 @@ export default function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login"              element={<StudentLogin />} />
-        <Route path="/admin/login"        element={<AdminLogin />} />
+        <Route path="/login/admin"        element={<AdminLogin />} />
         <Route path="/accept-invite/:token" element={<AcceptInvite />} />
         <Route path="/" element={<Layout />}>
         {/* Student Routes */}
@@ -38,7 +39,7 @@ export default function App() {
         <Route path="/mark-attendance" element={
           <ProtectedRoute role="student"><MarkAttendance /></ProtectedRoute>
         }/>
-        <Route path="/dashboard" element={
+        <Route path="/student/dashboard" element={
           <ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>
         }/>
         <Route path="/profile" element={
@@ -51,6 +52,9 @@ export default function App() {
         }/>
         <Route path="/admin/students" element={
           <ProtectedRoute role="admin"><StudentManagement /></ProtectedRoute>
+        }/>
+        <Route path="/admin/create-invite" element={
+          <ProtectedRoute role="admin"><CreateInvite /></ProtectedRoute>
         }/>
         {/* <Route path="/admin/enrollments" element={
           <ProtectedRoute role="admin"><EnrollmentApprovals /></ProtectedRoute>
