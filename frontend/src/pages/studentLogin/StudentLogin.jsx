@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom';
-function studentLogin() {
+function StudentLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState(null);
+    const [message,setMessage]=useState("")
+    const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -27,7 +28,8 @@ function studentLogin() {
        localStorage.setItem("token", res.data.accessToken);
       localStorage.setItem("user", JSON.stringify(res.data.data));
       setSuccess(true);
-      alert('Login successful!');
+      setMessage(res.data.message)
+      setError('')
       navigate('/student/dashboard');
       }catch(err){
         console.error(err);
@@ -40,9 +42,9 @@ function studentLogin() {
     <>
     <h1>StudentLogin</h1>
     <div className='bg-gray-100 h-screen flex items-center justify-center'>
-      <form action="/login" method="POST" className='border-2  border-violet-300 p-9 rounded-2xl' onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className='border-2  border-violet-300 p-9 rounded-2xl'>
         <div className="mb-4">
-          <label htmlFor="email" className="block text-gray-700 dark:text-white/60 mb-2">
+          <label htmlFor="email" className="block text-gray-700 mb-2">
             Email
           </label>
           <input
@@ -77,10 +79,12 @@ function studentLogin() {
         >
           {loading ? "Logging in..." : "Login"}
         </button>
+         {message && <div className="success">{message}</div>}
+          {error && <div className="error">{error}</div>}
       </form>
     </div>
     </>
   )
 }
 
-export default studentLogin
+export default StudentLogin

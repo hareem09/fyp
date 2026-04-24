@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
   semester: {
-    type: Number,
+    type: String,
     min: 1,
     max: 8
   },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import axios from 'axios'
 function CreateInvite() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -7,21 +7,27 @@ function CreateInvite() {
   const [department, setDepartment] = useState("");
   const [semester, setSemester] = useState("");
   const [batch, setBatch] = useState("");
-  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     if (e.target.name === "name") {
       setName(e.target.value);
     } else if (e.target.name === "email") {
       setEmail(e.target.value);
-    } else if (e.target.name === "roll no") {
+    }else if(e.target.name === "department"){
+      setDepartment(e.target.value)
+    } else if(e.target.name === "semester"){
+      setSemester(e.target.value)
+    } else if(e.target.name === "batch"){
+      setBatch(e.target.value)
+    } 
+    else if (e.target.name === "roll no") {
       setRollNo(e.target.value);
-    } else if (e.target.name === "password") {
-      setPassword(e.target.value);
-    }
   };
+}
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,29 +36,33 @@ function CreateInvite() {
     try {
       const res = await axios.post(
         "http://localhost:3000/api/admin/invite-student",
-        { name, email, rollNo, password },
+        { name, email, rollNo,department,semester,batch},
         { withCredentials: true },
       );
       console.log(res.data);
       setSuccess(true);
-      alert("Invite created successfully!");
-      navigate("/admin/dashboard");
+      setMessage(res.data.message);
+      setError(""); 
+      // alert("Invite created successfully!");
+  
     } catch (err) {
       console.error(err);
-      setError("Invalid email or password");
+      setError(err.response?.data?.message);
+      setMessage("");
     } finally {
       setLoading(false);
     }
   };
   return (
     <>
+    <main>
       <h1>Create Invite</h1>
-      <div className="bg-gray-100 h-screen w-60 flex items-center justify-center">
-        <form onSubmit={handleSubmit} className='flew-wrap'>
+      <div className=" w-200 min-h-1vh flex items-center justify-center p-10">
+        <form onSubmit={handleSubmit} className=' flex flex-wrap gap-10'>
           <div className="mb-4">
             <label
               htmlFor="name"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block mb-2"
             >
               Name
             </label>
@@ -70,7 +80,7 @@ function CreateInvite() {
           <div className="mb-4">
             <label
               htmlFor="email"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block text-gray-700  mb-2"
             >
               Email
             </label>
@@ -88,7 +98,7 @@ function CreateInvite() {
           <div className="mb-4">
             <label
               htmlFor="roll no"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block text-grey-900  mb-2"
             >
               Roll Number
             </label>
@@ -106,7 +116,7 @@ function CreateInvite() {
           <div className="mb-4">
             <label
               htmlFor="department"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block text-gray-700 mb-2"
             >
               Department
             </label>
@@ -117,14 +127,14 @@ function CreateInvite() {
               value={department}
               onChange={handleChange}
               className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="full name"
+              placeholder="Department"
               required
             />
           </div>
           <div className="mb-4">
             <label
               htmlFor="semester"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block text-gray-700 mb-2"
             >
               Semester
             </label>
@@ -135,14 +145,14 @@ function CreateInvite() {
               value={semester}
               onChange={handleChange}
               className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="full name"
+              placeholder="Semester"
               required
             />
           </div>
           <div className="mb-4">
             <label
               htmlFor="batch"
-              className="block text-gray-700 dark:text-white/60 mb-2"
+              className="block text-gray-700 mb-2"
             >
               Batch
             </label>
@@ -153,37 +163,22 @@ function CreateInvite() {
               value={batch}
               onChange={handleChange}
               className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="full name"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="block text-gray-700 dark:text-white/60 mb-2"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={password}
-              onChange={handleChange}
-              className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="••••••••"
+              placeholder="Batch"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-500 hover:bg-blue-700  text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-blue-500 hover:bg-blue-700 self-end mt-6 text-white font-bold h-10 rounded focus:outline-none focus:shadow-outline"
           >
             {loading ? "Sending invite..." : "SEND INVITE"}
           </button>
+          {message && <div className="success">{message}</div>}
+          {error && <div className="error">{error}</div>}
         </form>
       </div>
+      </main>
     </>
   );
 }

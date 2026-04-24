@@ -67,15 +67,15 @@ const studentLogin = async (req, res) => {
         .json({ success: false, message: "Access denied. Use admin portal." });
     }
 
-    // Account status checks
-    if (user.accountStatus !== "active") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Account not activated. Check your email.",
-        });
-    }
+    // // Account status checks
+    // if (user.accountStatus !== "active") {
+    //   return res
+    //     .status(403)
+    //     .json({
+    //       success: false,
+    //       message: "Account not activated. Check your email.",
+    //     });
+    // }
 
     // Password check
     const isMatch = await bcrypt.compare(password, user.password);

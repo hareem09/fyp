@@ -4,6 +4,10 @@ const Attendance = require('../../model/attendanceModel/attendanceSchema.js');
 const Subject = require('../../model/subjectModel/subjectSchema.js');
 const Geofence = require('../../model/geofenceModel/geofenceSchema.js');
 
+const nodemailer = require("nodemailer");
+const {transporter}= require('../../utils/sendMail.js')
+const crypto = require('crypto');
+const bcrypt=require('bcrypt')
 // ─── GET ALL USERS ────────────────────────────────────────────
 const getAllUsers = async (req, res) => {
   try {
@@ -283,7 +287,10 @@ const getSystemOverview = async (req, res) => {
 const createAndInviteStudent = async (req, res) => {
   try {
     const { name, email, rollNo, department, semester, batch } = req.body;
-
+    const existing = await User.findOne({ email: email });
+    if (existing) {
+    return res.status(400).json({ message: "User already exists" });
+    }
    // 1. Generate temporary password
     const tempPassword = crypto.randomBytes(6).toString("hex");
 
@@ -302,7 +309,7 @@ const createAndInviteStudent = async (req, res) => {
     });
 
     // 4. Send email
-    await sendMail({
+   await transporter.sendMail({
       to: email,
       subject: "Your Student Account Access",
       html: `
@@ -316,12 +323,11 @@ const createAndInviteStudent = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: `Invite sent to ${email}`,
-      inviteUrl  // remove in production
+      message: `Invite sent to ${email}`
     });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 

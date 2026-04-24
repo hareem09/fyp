@@ -1,6 +1,6 @@
 // controllers/studentController.js
-const User = require('../models/User');
-const Attendance = require('../models/Attendance');
+const User = require('../../model/userModel/userSchema.js');
+const Attendance = require('../../model/attendanceModel/attendanceSchema.js');
 const axios = require('axios');
 
 // ─── GET PROFILE ──────────────────────────────────────────────
