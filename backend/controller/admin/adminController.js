@@ -15,8 +15,8 @@ const getAllUsers = async (req, res) => {
 
     let filter = {};
     if (role) filter.role = role;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
+    // if (isActive !== undefined) filter.isActive = isActive === 'true';
+    // if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
 
     const users = await User.find(filter)
       .select('-password -faceEmbedding -resetPasswordToken')
@@ -48,7 +48,7 @@ const getUserById = async (req, res) => {
 // ─── CREATE USER (admin creates student/teacher) ──────────────
 const createUser = async (req, res) => {
   try {
-    const { name, email, role, rollNo, department, semester, batch, employeeId, designation } = req.body;
+    const { name, email, role, employeeId, designation } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -62,15 +62,24 @@ const createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
     const user = await User.create({
-      name, email, role,
+      name, email, role: 'teacher',
       password: hashedPassword,
-      rollNo, department, semester, batch,
       employeeId, designation,
-      isApproved: true,  // admin-created accounts are pre-approved
+      isApproved: true,  
       isActive: true
     });
 
-    // In production: send email with tempPassword to user
+    await transporter.sendMail({
+      to: email,
+      subject: "Your Teacher Account Access",
+      html: `
+        <h3>Hello ${name},</h3>
+        <p>Your Teacher account has been created.</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+        <p>Please change your password after login.</p>
+      `,
+    });
 
     res.status(201).json({
       success: true,
@@ -264,7 +273,7 @@ const getSystemOverview = async (req, res) => {
       pendingEnrollments,
       todayAttendance
     ] = await Promise.all([
-      User.countDocuments({ role: 'student', isActive: true }),
+      User.countDocuments({ role: 'student' }),
       User.countDocuments({ role: 'teacher', isActive: true }),
       User.countDocuments({ enrollmentStatus: 'pending' }),
       Attendance.countDocuments({
@@ -305,7 +314,9 @@ const createAndInviteStudent = async (req, res) => {
       semester,
       batch,
       role: 'student',
-      password: hashedPassword
+      password: hashedPassword,
+      isApproved: true,  
+      isActive: true
     });
 
     // 4. Send email
@@ -325,12 +336,86 @@ const createAndInviteStudent = async (req, res) => {
       success: true,
       message: `Invite sent to ${email}`
     });
-
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
+const createSubject = async (req, res) => {
+  try {
+    const {
+      name,
+      code,
+      department,
+      semester,
+      creditHours,
+      teacher,
+      schedule
+    } = req.body;
+
+    const subject = new Subject({
+      name,
+      code,
+      department,
+       semester,
+      creditHours,
+      teacher
+    });
+
+    await subject.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Subject created successfully",
+      subject
+    });
+  }catch(err){
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+const getSubject = async (req, res) => {
+  try{
+      const subjects = await Subject.find()
+      .populate('teacher', 'name email')
+      .populate('students', 'name email');
+
+     res.json(subjects);
+  }catch(err){
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+const assignSubjectToTeacher = async (req, res) => {
+  try {
+    const { subjectId, teacherId } = req.body;
+
+    // 1. Check teacher exists
+    const teacher = await User.findById(teacherId);
+    if (!teacher || teacher.role !== 'teacher') {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // 2. Update subject
+    const subject = await Subject.findByIdAndUpdate(
+      subjectId,
+      { teacher: teacherId },
+      { new: true }
+    ).populate('teacher', 'name email');
+
+    if (!subject) {
+      return res.status(404).json({ message: "Subject not found" });
+    }
+
+    res.json({
+      message: "Subject assigned to teacher successfully",
+      subject
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 module.exports = {
     getAllUsers,
     getUserById,
@@ -343,5 +428,8 @@ module.exports = {
     approveUser,
     toggleUserStatus,
     importStudents,
-    createAndInviteStudent
+    createAndInviteStudent,
+    createSubject,
+    assignSubjectToTeacher,
+    getSubject
 }

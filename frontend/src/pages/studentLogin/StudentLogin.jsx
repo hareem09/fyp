@@ -24,13 +24,20 @@ function StudentLogin() {
      setSuccess(false);
      try{
       const res = await axios.post('http://localhost:3000/api/auth/login/student', { email, password }, { withCredentials: true });
-      console.log(res.data);
-       localStorage.setItem("token", res.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(res.data.data));
+     
+        console.log('res.data:', res.data);
+       console.log('accessToken:', res.data.accessToken);
+       console.log('data:', res.data.data);
+       localStorage.setItem('token', res.data.accessToken);
+       localStorage.setItem("user", JSON.stringify(res.data.data));
+       console.log('5. After setItem');
+       console.log('6. getItem result:', localStorage.getItem('token'));
       setSuccess(true);
       setMessage(res.data.message)
+       setTimeout(() => {
+         navigate("/student/dashboard");
+        }, 100);
       setError('')
-      navigate('/student/dashboard');
       }catch(err){
         console.error(err);
         setError("Invalid email or password");

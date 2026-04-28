@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from 'react';
 import API from '../../../src/api/axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function EnrollFace() {
   const videoRef    = useRef(null);
@@ -54,7 +55,7 @@ export default function EnrollFace() {
       setMessage('Enrolling your face. Please wait...');
 
       // ── THIS CALLS NODE.JS WHICH CALLS PYTHON ───────────
-      const response = await API.post('http://localhost:3000/api/student/enroll-face', {
+      const response = await API.post('http://localhost:3000/api/student/enroll', {
         images   // 5 base64 images
       });
       // ─────────────────────────────────────────────────────

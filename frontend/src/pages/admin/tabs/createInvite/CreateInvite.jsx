@@ -1,12 +1,10 @@
 import { useState } from "react";
-import axios from 'axios'
+import API from '../../../../api/axios'
 function CreateInvite() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [rollNo, setRollNo] = useState("");
-  const [department, setDepartment] = useState("");
-  const [semester, setSemester] = useState("");
-  const [batch, setBatch] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [designation, setDesignation] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -17,16 +15,11 @@ function CreateInvite() {
       setName(e.target.value);
     } else if (e.target.name === "email") {
       setEmail(e.target.value);
-    }else if(e.target.name === "department"){
-      setDepartment(e.target.value)
-    } else if(e.target.name === "semester"){
-      setSemester(e.target.value)
-    } else if(e.target.name === "batch"){
-      setBatch(e.target.value)
-    } 
-    else if (e.target.name === "roll no") {
-      setRollNo(e.target.value);
-  };
+    }else if(e.target.name === "employeeId"){
+      setEmployeeId(e.target.value)
+    } else if(e.target.name === "designation"){
+      setDesignation(e.target.value)
+    }
 }
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,9 +27,9 @@ function CreateInvite() {
     setError(null);
     setSuccess(false);
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/admin/invite-student",
-        { name, email, rollNo,department,semester,batch},
+      const res = await API.post(
+        "http://localhost:3000/api/admin/user",
+        { name, email, employeeId, designation },
         { withCredentials: true },
       );
       console.log(res.data);
@@ -97,76 +90,41 @@ function CreateInvite() {
           </div>
           <div className="mb-4">
             <label
-              htmlFor="roll no"
-              className="block text-grey-900  mb-2"
+              htmlFor="employeeId"
+              className="block text-gray-700 mb-2"
             >
-              Roll Number
+              Employee ID
             </label>
             <input
-              type="number"
-              id="roll NO"
-              name="roll no"
-              value={rollNo}
+              type="name"
+              id="employeeId"
+              name="employeeId"
+              value={employeeId}
               onChange={handleChange}
               className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="roll no"
+              placeholder="Employee ID"
               required
             />
           </div>
           <div className="mb-4">
             <label
-              htmlFor="department"
+              htmlFor="designation"
               className="block text-gray-700 mb-2"
             >
-              Department
+              Designation
             </label>
             <input
               type="name"
-              id="department"
-              name="department"
-              value={department}
+              id="designation"
+              name="designation"
+              value={designation}
               onChange={handleChange}
               className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="Department"
+              placeholder="Designation"
               required
             />
           </div>
-          <div className="mb-4">
-            <label
-              htmlFor="semester"
-              className="block text-gray-700 mb-2"
-            >
-              Semester
-            </label>
-            <input
-              type="name"
-              id="semester"
-              name="semester"
-              value={semester}
-              onChange={handleChange}
-              className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="Semester"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="batch"
-              className="block text-gray-700 mb-2"
-            >
-              Batch
-            </label>
-            <input
-              type="name"
-              id="batch"
-              name="batch"
-              value={batch}
-              onChange={handleChange}
-              className="bg-gray-100 border border-gray-300 text-gray-900 placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder:text-gray-400 dark:text-white"
-              placeholder="Batch"
-              required
-            />
-          </div>
+       
           <button
             type="submit"
             disabled={loading}

@@ -16,13 +16,14 @@ import StudentProfile     from './pages/studentProfile/StudentProfile';
 
 // Admin
 import AdminDashboard      from './pages/admin/adminDashboard/AdminDashboard';
-import StudentManagement   from './pages/admin/studentManagement/StudentManagement';
-import CreateInvite from './pages/admin/createInvite/CreateInvite';
+import StudentManagement   from './pages/admin/tabs/studentManagement/StudentManagement';
+import CreateInvite from './pages/admin/tabs/createInvite/CreateInvite';
 // import EnrollmentApprovals from './pages/admin/enrollment/EnrollmentApprovals';
-import AttendanceManagement from './pages/admin/attendenceManagement/AttendenceManagement';
-import GeofenceConfig      from './pages/admin/geofenceConfig/GeofenceConfig';
-import Reports             from './pages/admin/reports/Reports';
+import AttendanceManagement from './pages/admin/tabs/attendenceManagement/AttendenceManagement';
+import GeofenceConfig      from './pages/admin/tabs/geofenceConfig/GeofenceConfig';
+import Reports             from './pages/admin/tabs/reports/Reports';
 
+import TeacherDashboard from './pages/teacher/teacherDashboard/TeacherDasboard';
 export default function App() {
   return (
     <BrowserRouter>
@@ -45,7 +46,9 @@ export default function App() {
         <Route path="/profile" element={
           <ProtectedRoute role="student"><StudentProfile /></ProtectedRoute>
         }/>
-
+         <Route path="/teacher/dashboard" element={
+          <ProtectedRoute role="admin"><TeacherDashboard /></ProtectedRoute>
+        }/>
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={
           <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>

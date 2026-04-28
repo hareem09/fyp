@@ -4,6 +4,8 @@ from flask_cors import CORS
 import numpy as np
 import os
 from dotenv import load_dotenv
+import base64
+import cv2
 
 load_dotenv()
 
@@ -61,75 +63,48 @@ def enroll():
         user_id = data.get('userId')
         images  = data.get('images', [])
 
-        print(f"\n--- ENROLL REQUEST ---")
-        print(f"User ID:      {user_id}")
-        print(f"Images count: {len(images)}")
+        # validation...
 
-        # Validate input
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'message': 'userId is required'
-            }), 400
-
-        if len(images) < 5:
-            return jsonify({
-                'success': False,
-                'message': f'Minimum 5 images required. Got {len(images)}'
-            }), 400
-
-        # Decode and validate each image
         decoded_images = []
-        for i, img_b64 in enumerate(images):
-            if not validate_image(img_b64):
-                print(f"  Image {i+1}: invalid, skipping")
-                continue
-
+        for img_b64 in images:
             img = base64_to_image(img_b64)
-            if img is None:
-                continue
+            if img is not None:
+                img = preprocess_image(img)
+                decoded_images.append(img)
 
-            img = preprocess_image(img)
-            decoded_images.append(img)
+        print("Generating embeddings...")
 
-        print(f"Valid images: {len(decoded_images)} / {len(images)}")
+        valid_embeddings = []
 
-        if len(decoded_images) < 3:
+        for i, img in enumerate(decoded_images):
+            emb = facenet_embedder.get_embedding(img)
+
+            if emb is not None:
+                svm_classifier.save_embedding(user_id, emb)
+                valid_embeddings.append(emb)
+            else:
+                print(f"Image {i+1}: skipped")
+
+        if len(valid_embeddings) == 0:
             return jsonify({
                 'success': False,
-                'message': 'Not enough valid face images. '
-                           'Please ensure good lighting and face the camera.'
+                'message': 'No valid faces found'
             }), 400
 
-        # Generate averaged embedding from all valid images
-        print("Generating face embeddings...")
-        embedding = facenet_embedder.get_average_embedding(decoded_images)
-
-        if embedding is None:
-            return jsonify({
-                'success': False,
-                'message': 'No face detected in images. '
-                           'Please ensure your face is clearly visible.'
-            }), 400
-
-        # Save embedding to disk
-        svm_classifier.save_embedding(user_id, embedding)
-
-        # Retrain SVM with new user included
         trained = svm_classifier.train()
 
         return jsonify({
-            'success':       True,
-            'message':       'Face enrolled successfully',
-            'embedding':     embedding.tolist(),  # send to Node.js for MongoDB storage
-            'model_trained': trained,
-            'total_enrolled': len(svm_classifier.get_enrolled_users())
+            'success': True,
+            'message': 'Face enrolled successfully',
+            'model_trained': trained
         })
 
-    except Exception as e:
+    except Exception as e:   # ← THIS MUST EXIST
         print(f"❌ Enroll error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 # ══════════════════════════════════════════════════════════════
 # ROUTE 3 — RECOGNIZE FACE
@@ -139,69 +114,85 @@ def enroll():
 @app.route('/recognize', methods=['POST'])
 def recognize():
     try:
-        data      = request.get_json()
-        image_b64 = data.get('image')
+        print("\n===== RECOGNIZE DEBUG START =====")
 
-        print(f"\n--- RECOGNIZE REQUEST ---")
+        data = request.get_json()
+        print("1. Data received:", bool(data))
+
+        if not data:
+            print("❌ No JSON body")
+            return jsonify({"success": False, "message": "No JSON received"}), 400
+
+        image_b64 = data.get('image')
+        print("2. Image exists:", bool(image_b64))
 
         if not image_b64:
-            return jsonify({
-                'success': False,
-                'message': 'image is required'
-            }), 400
+            return jsonify({"success": False, "message": "Missing image"}), 400
 
-        if not svm_classifier.is_trained:
-            return jsonify({
-                'success': False,
-                'message': 'No model trained yet. Enroll users first.'
-            }), 400
+        print("3. Base64 length:", len(image_b64))
 
-        # Decode image
-        image = base64_to_image(image_b64)
+        # decode
+        try:
+            if "," in image_b64:
+                image_b64 = image_b64.split(",")[1]
+
+            img_bytes = base64.b64decode(image_b64)
+            np_arr = np.frombuffer(img_bytes, np.uint8)
+            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+            print("4. Decode success:", image is not None)
+
+        except Exception as e:
+            print("❌ Decode error:", e)
+            return jsonify({"success": False, "message": "Decode failed"}), 400
+
         if image is None:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid image data'
-            }), 400
+            return jsonify({"success": False, "message": "Invalid image"}), 400
 
-        # Preprocess
-        image = preprocess_image(image)
+        print("5. Image shape:", image.shape)
 
-        # Generate embedding
-        print("Generating embedding for recognition...")
+        # preprocess
+        try:
+            image = preprocess_image(image)
+            print("6. Preprocess OK")
+        except Exception as e:
+            print("❌ Preprocess error:", e)
+            return jsonify({"success": False, "message": "Preprocess failed"}), 400
+
+        # embedding
         embedding = facenet_embedder.get_embedding(image)
+
+        print("7. Embedding:", embedding is not None)
 
         if embedding is None:
             return jsonify({
-                'success': False,
-                'message': 'No face detected. Please look directly at the camera.'
+                "success": False,
+                "message": "No face detected"
             }), 400
 
-        # Predict using SVM
-        user_id, confidence = svm_classifier.predict(
-            embedding,
-            threshold=float(os.getenv('CONFIDENCE_THRESHOLD', 0.85))
-        )
+        embedding = np.array(embedding).flatten()
+        print("8. Embedding shape:", embedding.shape)
+
+        user_id, confidence = svm_classifier.predict(embedding)
+
+        print("9. Prediction done:", user_id, confidence)
 
         if user_id is None:
             return jsonify({
-                'success':    False,
-                'message':    f'Face not recognized. '
-                              f'Confidence {confidence:.0%} is too low.',
-                'confidence': confidence
+                "success": False,
+                "message": "Not recognized",
+                "confidence": confidence
             }), 401
 
         return jsonify({
-            'success':    True,
-            'userId':     user_id,
-            'confidence': confidence,
-            'message':    'Face recognized successfully'
+            "success": True,
+            "userId": user_id,
+            "confidence": confidence
         })
 
     except Exception as e:
-        print(f"❌ Recognize error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+        print("❌ GLOBAL ERROR:", e)
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # ══════════════════════════════════════════════════════════════
 # ROUTE 4 — LIVENESS DETECTION

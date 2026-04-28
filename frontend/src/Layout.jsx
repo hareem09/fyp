@@ -6,16 +6,13 @@ import Aside from './components/aside/Aside'
 
 function Layout() {
   return (
-    <>
-    <div className="body w-full md:w-full md:max-h-screen flex flex-col shrink">
-    <Header />
-    <div className="main w-full md:w-full sm:max-h-screen  flex flex-wrap  ">
-    <Aside/>
-    <Outlet/>
+   <>
+  <Header />
+    <div className="flex-1 p-4">
+      <Outlet />
     </div>
-    <Footer/>
-    </div>
-    </>
+  <Footer />
+</>
   )
 }
 

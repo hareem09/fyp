@@ -37,37 +37,57 @@ const updateProfile = async (req, res) => {
 // ─── ENROLL FACE ──────────────────────────────────────────────
 const enrollFace = async (req, res) => {
   try {
+    console.log('1. enrollFace called');
+    console.log('2. user:', req.user);
+
     const { images } = req.body;
-    // images = array of base64 encoded face photos from frontend
+    console.log('3. images received:', images?.length);
 
     if (!images || images.length < 5) {
-      return res.status(400).json({ success: false, message: 'Minimum 5 face images required' });
+      return res.status(400).json({
+        success: false,
+        message: `Need 5 images. Got ${images?.length || 0}`
+      });
     }
 
-    // Send images to Python AI microservice
-    const aiResponse = await axios.post(`${process.env.AI_SERVICE_URL}/enroll`, {
-      userId: req.user.id,
-      images
-    });
+    console.log('4. calling Python...');
+    const axios = require('axios');
 
-    if (!aiResponse.data.success) {
-      return res.status(400).json({ success: false, message: 'Face enrollment failed. Please try again in better lighting.' });
-    }
+    const aiResponse = await axios.post(
+      `${process.env.AI_SERVICE_URL}/enroll`,
+      { userId: req.user.id, images },
+      { timeout: 30000 }
+    );
 
-    // Save embedding to user document
+    console.log('5. Python response:', aiResponse.data);
+
     await User.findByIdAndUpdate(req.user.id, {
-      faceEmbedding: aiResponse.data.embedding,
+      faceEmbedding:    aiResponse.data.embedding,
       enrollmentStatus: 'pending',
-      enrollmentDate: Date.now()
+      enrollmentDate:   Date.now()
     });
 
     res.status(200).json({
       success: true,
-      message: 'Face enrolled successfully. Awaiting admin approval.',
+      message: 'Face enrolled. Awaiting admin approval.'
     });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('❌ enrollFace error:', error.message);
+    console.error('❌ error code:', error.code);
+    console.error('❌ python says:', error.response?.data);
+
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(503).json({
+        success: false,
+        message: 'Python AI service not running on port 8000'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || error.message
+    });
   }
 };
 

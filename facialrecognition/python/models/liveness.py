@@ -1,139 +1,118 @@
-# models/liveness.py
+# models/liveness.py — OpenCV only, no mediapipe needed
 import cv2
 import numpy as np
-import mediapipe as mp
 from scipy.spatial import distance
 
 class LivenessDetector:
     def __init__(self):
-        print("Loading MediaPipe Face Mesh...")
+        print("Loading OpenCV liveness detector...")
 
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh    = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,      # True for single images
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+        # Load eye detector
+        self.face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        )
+        self.eye_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_eye.xml'
         )
 
-        # 6 landmark points per eye for EAR calculation
-        # These are MediaPipe Face Mesh indices
-        self.LEFT_EYE_EAR  = [362, 385, 387, 263, 373, 380]
-        self.RIGHT_EYE_EAR = [33,  160, 158, 133, 153, 144]
-
-        # EAR below this value = eye is closed
+        # EAR threshold — below this = eye closed
         self.EAR_THRESHOLD  = 0.25
-        # Number of blinks required to pass
         self.BLINK_REQUIRED = 1
 
-        print("✅ MediaPipe loaded successfully")
+        print("✅ OpenCV liveness detector ready")
 
-    # ── CALCULATE EYE ASPECT RATIO ─────────────────────────────
-    def calculate_ear(self, landmarks, eye_indices, width, height):
+    # ── DETECT EYES AND CALCULATE EAR ─────────────────────────
+    def get_ear_from_eyes(self, eye_region):
         """
-        Eye Aspect Ratio formula:
-        EAR = (||p2-p6|| + ||p3-p5||) / (2 * ||p1-p4||)
-
-        p1, p4 = horizontal corners of eye
-        p2, p3, p5, p6 = vertical landmarks
-
-        Open eye  → EAR ≈ 0.30
-        Closed eye → EAR ≈ 0.05
+        Calculate a simple Eye Aspect Ratio from eye bounding box
+        When eye is open  → region is wider than tall
+        When eye is closed → region becomes shorter
         """
-        # Extract 6 eye points as pixel coordinates
-        points = []
-        for idx in eye_indices:
-            lm = landmarks[idx]
-            x  = int(lm.x * width)
-            y  = int(lm.y * height)
-            points.append((x, y))
+        if eye_region is None:
+            return 0.3  # default open eye value
 
-        # Vertical distances
-        v1 = distance.euclidean(points[1], points[5])
-        v2 = distance.euclidean(points[2], points[4])
+        h, w = eye_region.shape[:2]
 
-        # Horizontal distance
-        h  = distance.euclidean(points[0], points[3])
+        if w == 0:
+            return 0.3
 
-        # Avoid division by zero
-        if h == 0:
-            return 0.0
+        # Simple ratio: height/width
+        # Open eye: small ratio
+        # Closed eye: larger ratio (eye becomes more square)
+        ratio = h / w
+        return ratio
 
-        ear = (v1 + v2) / (2.0 * h)
-        return round(ear, 4)
-
-    # ── ANALYZE SINGLE FRAME ───────────────────────────────────
+    # ── ANALYZE SINGLE FRAME ──────────────────────────────────
     def analyze_frame(self, image):
         """
-        Analyze a single frame for face and EAR values
+        Analyze single frame for eye state
         Returns dict with detection results
         """
         if image is None:
             return {
                 'face_detected': False,
-                'left_ear': 0,
-                'right_ear': 0,
-                'avg_ear': 0,
+                'eyes_detected': 0,
+                'ear': 0.3,
                 'is_blink': False
             }
 
-        h, w = image.shape[:2]
+        gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Convert BGR to RGB for MediaPipe
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Detect face first
+        faces = self.face_cascade.detectMultiScale(
+            gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80)
+        )
 
-        # Process frame
-        results = self.face_mesh.process(image_rgb)
-
-        if not results.multi_face_landmarks:
+        if len(faces) == 0:
             return {
                 'face_detected': False,
-                'left_ear': 0,
-                'right_ear': 0,
-                'avg_ear': 0,
+                'eyes_detected': 0,
+                'ear': 0.3,
                 'is_blink': False
             }
 
-        landmarks = results.multi_face_landmarks[0].landmark
+        # Use largest face
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
 
-        # Calculate EAR for both eyes
-        left_ear  = self.calculate_ear(landmarks, self.LEFT_EYE_EAR,  w, h)
-        right_ear = self.calculate_ear(landmarks, self.RIGHT_EYE_EAR, w, h)
-        avg_ear   = round((left_ear + right_ear) / 2.0, 4)
+        # Focus on upper half of face for eyes
+        face_roi  = gray[y:y + h//2, x:x + w]
+
+        # Detect eyes inside face region
+        eyes = self.eye_cascade.detectMultiScale(
+            face_roi,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(20, 20)
+        )
+
+        eyes_count = len(eyes)
+
+        # If no eyes detected = possible blink
+        is_blink = eyes_count == 0
 
         return {
             'face_detected': True,
-            'left_ear':  left_ear,
-            'right_ear': right_ear,
-            'avg_ear':   avg_ear,
-            'is_blink':  avg_ear < self.EAR_THRESHOLD
+            'eyes_detected': eyes_count,
+            'ear':           0.1 if is_blink else 0.3,
+            'is_blink':      is_blink
         }
 
-    # ── MAIN LIVENESS CHECK ────────────────────────────────────
+    # ── MAIN LIVENESS CHECK ───────────────────────────────────
     def check_liveness(self, frames):
         """
-        Check liveness across a sequence of frames
-        
-        Logic:
-        ┌─────────────────────────────────────────────┐
-        │ Real person: EAR varies, blinks detected     │
-        │ Photo spoof: EAR constant, no blinks         │
-        │ Video spoof: EAR varies but pattern differs  │
-        └─────────────────────────────────────────────┘
-        
-        Returns dict with is_live and reason
+        Check liveness from sequence of frames
+        Detects blink by tracking when eyes disappear and reappear
         """
         if not frames or len(frames) < 5:
             return {
-                'is_live':    False,
-                'reason':     'Not enough frames. Minimum 5 required.',
+                'is_live':     False,
+                'reason':      'Not enough frames. Minimum 5 required.',
                 'blink_count': 0
             }
 
         blink_count    = 0
         eye_was_closed = False
-        ear_history    = []
+        eyes_history   = []
         faces_detected = 0
 
         print(f"Analyzing {len(frames)} frames for liveness...")
@@ -145,22 +124,23 @@ class LivenessDetector:
                 continue
 
             faces_detected += 1
-            ear = result['avg_ear']
-            ear_history.append(ear)
+            eyes_count = result['eyes_detected']
+            eyes_history.append(eyes_count)
 
-            # Blink detection state machine
-            # Eye closes (EAR drops below threshold)
+            print(f"  Frame {i+1}: face=✅ eyes={eyes_count}")
+
+            # Blink detection
+            # Eyes close → eyes_count drops to 0
             if result['is_blink'] and not eye_was_closed:
                 eye_was_closed = True
-                print(f"  Frame {i+1}: Eye closing (EAR={ear})")
+                print(f"  Frame {i+1}: Eyes closing...")
 
-            # Eye opens again (EAR rises above threshold)
+            # Eyes open again → blink complete
             elif not result['is_blink'] and eye_was_closed:
                 eye_was_closed = False
                 blink_count += 1
-                print(f"  Frame {i+1}: ✅ Blink #{blink_count} detected (EAR={ear})")
+                print(f"  Frame {i+1}: ✅ Blink #{blink_count} detected!")
 
-        # ── CHECKS ────────────────────────────────────────────
         # No face detected at all
         if faces_detected == 0:
             return {
@@ -169,39 +149,28 @@ class LivenessDetector:
                 'blink_count': 0
             }
 
-        # Too few frames with face
-        if faces_detected < 3:
+        # Check eye count variance
+        # Static photo = eye count never changes
+        eye_variance = float(np.var(eyes_history)) if len(eyes_history) > 1 else 0
+        print(f"Eye count variance: {eye_variance}")
+
+        if eye_variance == 0 and blink_count == 0 and faces_detected > 3:
             return {
                 'is_live':     False,
-                'reason':      'Face not consistently visible. Please hold still.',
-                'blink_count': blink_count
-            }
-
-        # Check EAR variance — static photo has near-zero variance
-        ear_variance = float(np.var(ear_history)) if len(ear_history) > 1 else 0
-        print(f"EAR variance: {ear_variance:.6f}")
-
-        if ear_variance < 0.00005 and blink_count == 0:
-            return {
-                'is_live':      False,
-                'reason':       'Spoofing detected. Static image or video detected.',
-                'blink_count':  0,
-                'ear_variance': ear_variance
+                'reason':      'Possible photo spoof. No eye movement detected.',
+                'blink_count': 0
             }
 
         # Check required blinks
         if blink_count >= self.BLINK_REQUIRED:
             return {
-                'is_live':      True,
-                'reason':       f'Liveness confirmed. {blink_count} blink(s) detected.',
-                'blink_count':  blink_count,
-                'ear_variance': ear_variance
+                'is_live':     True,
+                'reason':      f'Liveness confirmed. {blink_count} blink(s) detected.',
+                'blink_count': blink_count
             }
 
-        # Not enough blinks
         return {
-            'is_live':      False,
-            'reason':       'No blink detected. Please blink naturally and try again.',
-            'blink_count':  blink_count,
-            'ear_variance': ear_variance
+            'is_live':     False,
+            'reason':      'No blink detected. Please blink naturally.',
+            'blink_count': blink_count
         }
