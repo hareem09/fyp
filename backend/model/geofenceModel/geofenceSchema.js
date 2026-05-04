@@ -1,54 +1,25 @@
 // models/Geofence.js
+// backend/models/Geofence.js
 const mongoose = require('mongoose');
 
 const geofenceSchema = new mongoose.Schema({
-
-  name: {
-    type: String,
-    required: true,
-    trim: true             // e.g. "Main Campus", "Block A"
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-
-  // Center point of the geofence
+  name:        { type: String, required: true, trim: true },
+  description: { type: String, trim: true },
   center: {
-    lat: {
-      type: Number,
-      required: true
-    },
-    lng: {
-      type: Number,
-      required: true
-    }
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
   },
-
-  // Allowed radius in meters
-  radius: {
-    type: Number,
-    required: true,
-    default: 100           // 100 meters default
-  },
-
-  // Who created it
+  radius:    { type: Number, required: true, default: 100 },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref:  'User',
     required: true
   },
-
-  // Which subjects use this geofence
   applicableSubjects: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subject'
+    ref:  'Subject'
   }],
-
-  isActive: {
-    type: Boolean,
-    default: true
-  }
+  isActive: { type: Boolean, default: true }
 
 }, { timestamps: true });
 

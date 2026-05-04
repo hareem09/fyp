@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import API from '../../../../api/axios';
 
 const AttendanceTab = ({ records, onRefresh }) => {
   const [search,       setSearch]       = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter,   setDateFilter]   = useState('');
+  const [recordfiltered,setRecordFiltered]=useState(records)
+
+  useEffect(()=>{
+    setRecordFiltered(records);
+  }, [records]);
 
   const filtered = records.filter(r => {
     const matchSearch = (
@@ -102,7 +107,7 @@ const AttendanceTab = ({ records, onRefresh }) => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-5 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800">
-            Attendance Records ({filtered.length})
+            Attendance Records ({filtered.length}||{recordfiltered.length})
           </h2>
         </div>
         <div className="overflow-x-auto">

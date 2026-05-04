@@ -141,11 +141,11 @@ const adminLogin = async (req, res) => {
         });
     }
 
-    if (user.accountStatus !== "active") {
-      return res
-        .status(403)
-        .json({ success: false, message: "Account has been deactivated" });
-    }
+    // if (user.accountStatus !== "active") {
+    //   return res
+    //     .status(403)
+    //     .json({ success: false, message: "Account has been deactivated" });
+    // }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

@@ -6,7 +6,7 @@ import API                     from '../../../api/axios';
 
 import DashboardTab    from '../tabs/dashboardTab/DashboardTab';
 import StudentsTab     from '../tabs/studentManagement/StudentManagement';
-// import EnrollmentsTab  from './tabs/EnrollmentsTab';
+import EnrollmentsTab  from '../tabs/enrollmentTab/EnrollmentTab';
 import AttendanceTab   from '../tabs/attendenceManagement/AttendenceManagement';
 import GeofenceTab     from '../tabs/geofenceConfig/GeofenceConfig';
 import ReportsTab      from '../tabs/reports/Reports';
@@ -44,13 +44,14 @@ export default function AdminDashboard() {
           API.get('http://localhost:3000/api/admin/overview'),
           API.get('http://localhost:3000/api/admin/users?role=student'),
           API.get('http://localhost:3000/api/admin/users?enrollmentStatus=pending'),
-          API.get('http://localhost:3000/api/admin/attendance/today'),
-          API.get('http://localhost:3000/api/admin/attendance'),
+          API.get('http://localhost:3000/api/teacher/today'),
+          API.get('http://localhost:3000/api/teacher/all'),
           API.get('http://localhost:3000/api/admin/geofence'),
           API.get('http://localhost:3000/api/admin/subjects'),
        
         ]);
-
+       console.log(overviewRes.data)
+        
       const ov = overviewRes.data.data || overviewRes.data;
       setOverview({
         totalStudents:      ov.totalStudents      || 0,
@@ -65,7 +66,8 @@ export default function AdminDashboard() {
       setAllAttendance(allAttRes.data.data || []);
       setGeofences(geoRes.data.data        || []);
       setSubjects(subjectRes.data.data    || []);
-
+      console.log(studentsRes.data)
+       console.log(enrollRes.data) 
     } catch (err) {
       console.error('Fetch error:', err.message);
     } finally {
@@ -82,13 +84,20 @@ export default function AdminDashboard() {
   // ── ENROLLMENT ACTIONS ─────────────────────────────────────
   const handleApprove = async (id) => {
     try {
-      await API.put(`/admin/enrollments/${id}/approve`);
+      await API.put(`/admin/enroll/${id}`);
       fetchAllData();
     } catch (err) {
       alert('Failed to approve');
     }
   };
-
+  const handleToggleStatus = async (id) => {
+    try {
+      await API.put(`http://localhost:3000/api/admin/toggle-status/${id}`);
+      onRefresh();
+    } catch (err) {
+      alert('Failed to update status');
+    }
+  };
   const handleReject = async (id) => {
     const reason = prompt('Enter rejection reason:');
     if (!reason) return;
@@ -237,6 +246,7 @@ export default function AdminDashboard() {
             <StudentsTab
               students={students}
               onRefresh={fetchAllData}
+              onToggleStatus={handleToggleStatus}
             />
           )}
           {activeTab === 'enrollments' && (

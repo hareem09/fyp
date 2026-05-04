@@ -153,7 +153,7 @@ const StudentDashboard = () => {
         <div className=" from-blue-600 to-blue-800 rounded-2xl p-6 mb-8 text-white">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold mb-1">
+              <h1 className="text-2xl text-black font-bold mb-1">
                 Welcome back, {user.name?.split(' ')[0]}! 👋
               </h1>
               <p className="text-blue-200 text-sm">

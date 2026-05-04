@@ -6,6 +6,8 @@ import DashboardTab  from '../tabs/dashboardTab/DashboardTab';
 import AttendanceTab from '../tabs/attendanceTab/AttendanceTab';
 import StudentsTab   from '../tabs/studentTab/StudentTab';
 import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
+import AttendanceWindowTab from '../tabs/attendanceWindowTab/AttendanceWindowTab';
+import TimetableTab from '../tabs/timetableTab/TimetableTab';
 // import ReportsTab    from '../tabs/reportTab/ReportTab';
 
  function TeacherDashboard() {
@@ -19,6 +21,7 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
   const [allRecords,   setAllRecords]   = useState([]);
   const [students,     setStudents]     = useState([]);
   const [subjects,     setSubjects]     = useState([]);
+  const [timetable,   setTimetable]   = useState([]);
   const [stats,        setStats]        = useState({
     totalStudents: 0,
     todayPresent:  0,
@@ -34,17 +37,19 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [todayRes, allRes, studentsRes, subjectsRes] = await Promise.all([
+      const [todayRes, allRes, studentsRes, subjectsRes, timetableRes] = await Promise.all([
         API.get('http://localhost:3000/api/teacher/today'),
-        API.get('http://localhost:3000/api/teacher/attendance'),
+        API.get('http://localhost:3000/api/teacher/all'),
         API.get('http://localhost:3000/api/teacher/students'),
-        API.get('http://localhost:3000/api/teacher/subjects')
+        API.get('http://localhost:3000/api/subjects/teacher-subjects'),
+        API.get('http://localhost:3000/api/teacher/timetable')
       ]);
 
-      const today = todayRes.data.data    || [];
-      const all   = allRes.data.data      || [];
+      const today = todayRes.data.data   || [];
+      const all   = allRes.data.data  || [];
       const studs = studentsRes.data.data || [];
-      const subs  = subjectsRes.data.data || [];
+      const subs  = subjectsRes.data.data|| [];
+      const timetable = timetableRes.data.data || [];
 
       setTodayRecords(today);
       setAllRecords(all);
@@ -54,8 +59,9 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
         totalStudents: studs.length,
         todayPresent:  today.filter(r => r.status === 'present').length,
         todayAbsent:   studs.length - today.filter(r => r.status === 'present').length,
-        totalSubjects: subs.length
+        totalSubjects: subs.length,
       });
+      setTimetable(timetable);
 
     } catch (err) {
       console.error('Fetch error:', err.message);
@@ -67,7 +73,7 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/admin/login');
+    navigate('/login/admin');
   };
 
   // ── SIDEBAR LINKS ──────────────────────────────────────────
@@ -77,6 +83,13 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
     { id: 'students',   label: 'My Students',  icon: '👨‍🎓' },
     { id: 'subjects',   label: 'My Subjects',  icon: '📚' },
     { id: 'reports',    label: 'Reports',      icon: '📊' },
+    { id: 'timetable',   label: 'Timetable',    icon: '🗓️'},
+    {
+      id: 'attendanceWindow',
+      label: 'Attendance Window',
+      icon: '⏰'
+    }
+
   ];
 
   if (loading) {
@@ -218,6 +231,16 @@ import SubjectsTab   from '../tabs/subjectTab/SubjectTab';
             <ReportsTab
               students={students}
               records={allRecords}
+            />
+          )}
+           {activeTab === 'attendanceWindow' && (
+            <AttendanceWindowTab
+              subjects={subjects}
+            />
+          )}
+           {activeTab === 'timetable' && (
+            <TimetableTab
+              subjects={subjects}
             />
           )}
         </div>

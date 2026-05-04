@@ -6,7 +6,10 @@ const authRoutes = require("./routes/auth/authRoutes.js");
 const adminRoutes = require("./routes/adminRoutes/adminRoutes.js");
 const studentRoutes = require("./routes/studentRoutes/studentRoute.js");
 const attendenceRoutes = require("./routes/studentRoutes/attendenceRoutes.js");
-
+const subjectRoutes = require("./routes/subjectRoutes/subjectRoutes.js");
+const geofenceRoutes = require("./routes/adminRoutes/geofenceRoutes.js");
+const teacherRoutes = require('./routes/teacherRoutes/teacherRoute.js')
+const attendanceWindowRoutes = require('./routes/teacherRoutes/attendanceWindowRoutes.js')
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
@@ -27,6 +30,10 @@ app.use("/api/auth",authRoutes);
 app.use("/api/admin",adminRoutes);
 app.use("/api/student",studentRoutes);
 app.use('/api/attendance',attendenceRoutes);
+app.use('/api/subjects',subjectRoutes);
+app.use('/api/admin', geofenceRoutes);
+app.use('/api/teacher',teacherRoutes);
+app.use('/api/teacher/attendance-window', attendanceWindowRoutes);
 app.listen(3000,()=>{
     console.log("server is running on port 3000");
 })

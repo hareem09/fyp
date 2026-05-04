@@ -1,19 +1,24 @@
-import React from 'react'
-import { useState } from 'react';
+
+import { useState,useEffect } from 'react';
 import API from '../../../../api/axios';
 function GeofenceConfig
 ({ geofences: initialGeofences, onRefresh }) {
-  const [geofences, setGeofences] = useState(initialGeofences || []);
+ const [geofences, setGeofences] = useState([]);
   const [showForm,  setShowForm]  = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [form,      setForm]      = useState({
     name: '', lat: '', lng: '', radius: 100
   });
 
+  useEffect(()=>{
+    fetchGeofences();
+  }, []);
+  
   const fetchGeofences = async () => {
     try {
-      const res = await API.get('/admin/geofence');
-      setGeofences(res.data.data || []);
+      const res = await API.get('http://localhost:3000/api/admin/geofence');
+      setGeofences(res.data.data|| []);
+      console.log('Fetched geofences:', res.data);
     } catch (err) {
       console.error('Failed to fetch geofences');
     }
@@ -35,12 +40,22 @@ function GeofenceConfig
 
   const handleCreate = async (e) => {
     e.preventDefault();
+     if (!form.name || form.lat === '' || form.lng === '') {
+      return alert('All fields are required');
+    }
+
+    const lat = parseFloat(form.lat);
+    const lng = parseFloat(form.lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return alert('Invalid coordinates');
+    }
     setLoading(true);
     try {
-      await API.post('/admin/geofence', {
-        name:   form.name,
-        center: { lat: parseFloat(form.lat), lng: parseFloat(form.lng) },
-        radius: parseInt(form.radius)
+      await API.post('http://localhost:3000/api/admin/geofence', {
+        name: form.name,
+        center: { lat, lng },
+        radius: Number(form.radius)
       });
       setShowForm(false);
       setForm({ name: '', lat: '', lng: '', radius: 100 });
@@ -55,7 +70,7 @@ function GeofenceConfig
 
   const handleToggle = async (id, isActive) => {
     try {
-      await API.put(`/admin/geofence/${id}`, { isActive: !isActive });
+      await API.put(`http://localhost:3000/api/admin/geofence/${id}`, { isActive: !isActive });
       fetchGeofences();
     } catch (err) {
       alert('Failed to update');
@@ -65,7 +80,7 @@ function GeofenceConfig
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this geofence?')) return;
     try {
-      await API.delete(`/admin/geofence/${id}`);
+      await API.delete(`http://localhost:3000/api/admin/geofence/${id}`);
       fetchGeofences();
     } catch (err) {
       alert('Failed to delete');
@@ -142,7 +157,7 @@ function GeofenceConfig
                 type="range"
                 min="50" max="1000" step="50"
                 value={form.radius}
-                onChange={e => setForm({ ...form, radius: e.target.value })}
+                onChange={e => setForm({ ...form, radius: Number(e.target.value) })}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -180,13 +195,19 @@ function GeofenceConfig
             <p className="text-gray-400 text-sm mt-1">Add a geofence to enable location validation</p>
           </div>
         ) : (
-          geofences.map((fence, i) => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          geofences.map((fence) => (
+            <div key={fence._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-semibold text-gray-800">{fence.name}</h3>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {fence.center?.lat?.toFixed(4)}, {fence.center?.lng?.toFixed(4)}
+                     {fence.center?.lat !== undefined
+                  ? fence.center.lat.toFixed(4)
+                  : 'N/A'}
+                ,
+                {fence.center?.lng !== undefined
+                  ? fence.center.lng.toFixed(4)
+                  : 'N/A'}
                   </p>
                 </div>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full

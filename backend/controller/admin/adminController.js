@@ -32,7 +32,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -faceEmbedding')
+      .select('-password -faceEmbedding -resetPasswordToken')
       .populate('subjects', 'name code');
 
     if (!user) {
@@ -95,13 +95,14 @@ const createUser = async (req, res) => {
 // ─── UPDATE USER ──────────────────────────────────────────────
 const updateUser = async (req, res) => {
   try {
+    const id = req.params.id?.trim();
     const { name, email, department, semester, designation, phone } = req.body;
-
+  
     const user = await User.findByIdAndUpdate(
-      req.params.id,
+      id,
       { name, email, department, semester, designation, phone },
       { new: true, runValidators: true }
-    ).select('-password -faceEmbedding');
+    ).select('-password -faceEmbedding -resetPasswordToken');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -154,11 +155,13 @@ const toggleUserStatus = async (req, res) => {
 // ─── APPROVE USER ACCOUNT ─────────────────────────────────────
 const approveUser = async (req, res) => {
   try {
+    const id = req.params.id?.trim();
+   console.log(id);
     const user = await User.findByIdAndUpdate(
-      req.params.id,
+      id,
       { isApproved: true },
       { new: true }
-    ).select('-password');
+    ).select('-password -faceEmbedding -refreshToken -resetPasswordToken');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -173,12 +176,15 @@ const approveUser = async (req, res) => {
 // ─── APPROVE FACE ENROLLMENT ──────────────────────────────────
 const approveEnrollment = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { enrollmentStatus: 'approved' },
-      { new: true }
-    ).select('-password -faceEmbedding');
+   const id = req.params.id?.trim();
+   console.log(id);
 
+   const user = await User.findByIdAndUpdate(
+  id,
+  { enrollmentStatus: 'approved' },
+  { new: true }
+).select('-password -faceEmbedding -refreshToken -resetPasswordToken');
+    console.log(user)
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -201,7 +207,7 @@ const rejectEnrollment = async (req, res) => {
         faceEmbedding: []   // clear the bad embedding
       },
       { new: true }
-    ).select('-password -faceEmbedding');
+    ).select('-password -faceEmbedding -refreshToken -resetPasswordToken');
 
     // In production: notify student via email with reason
 
@@ -274,7 +280,7 @@ const getSystemOverview = async (req, res) => {
       todayAttendance
     ] = await Promise.all([
       User.countDocuments({ role: 'student' }),
-      User.countDocuments({ role: 'teacher', isActive: true }),
+      User.countDocuments({ role: 'teacher' }),
       User.countDocuments({ enrollmentStatus: 'pending' }),
       Attendance.countDocuments({
         date: {

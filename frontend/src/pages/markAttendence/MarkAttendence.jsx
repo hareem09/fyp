@@ -9,14 +9,54 @@ const MarkAttendance = () => {
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("Click button to mark attendance");
   const [location, setLocation] = useState(null);
+  const [windowStatus, setWindowStatus] = useState(null);
+  const [timeLeft,     setTimeLeft]     = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState("");
   const [teacherId, setTeacherId] = useState("");
+
   useEffect(() => {
     startCamera();
     getLocation();
     fetchSubjects();
+  
   }, []);
+  //  const fetchWindow = async (selectedSubject) =>{
+  //   try{
+  //     const res = await API.get(`/teacher/attendance-window/${selectedSubject._id}`);
+  //     setWindowStatus(res.data.data)
+  //   }catch(err){
+  //     console.error('Failed to fetch window status');
+  //   }
+  //  }
+   // Check window status when subject selected
+   useEffect(() => {
+    if (selectedSubject) {
+      checkWindow(selectedSubject);
+      // Poll every 10 seconds
+      const interval = setInterval(() => checkWindow(selectedSubject), 10000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedSubject]);
+
+  // Countdown for window
+  useEffect(() => {
+    if (windowStatus?.isOpen && windowStatus?.data?.expiresAt) {
+      const interval = setInterval(() => {
+        const remaining = new Date(windowStatus.data.expiresAt) - new Date();
+        if (remaining <= 0) {
+          setWindowStatus(prev => ({ ...prev, isOpen: false }));
+          setTimeLeft(null);
+          clearInterval(interval);
+          return;
+        }
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        setTimeLeft({ mins, secs });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [windowStatus]);
 
   const startCamera = async () => {
     try {
@@ -45,6 +85,15 @@ const MarkAttendance = () => {
         }),
       () => setMessage("Please enable GPS"),
     );
+  };
+   
+  const checkWindow = async (subjectId) => {
+    try {
+      const res = await API.get(`/teacher/attendance-window/active/${subjectId}`);
+      setWindowStatus(res.data);
+    } catch (err) {
+      console.error('Failed to check window');
+    }
   };
 
   const captureFrames = (count = 15) => {
@@ -84,7 +133,10 @@ const MarkAttendance = () => {
     setMessage('❌ Please select a subject');
     return;
   }
-
+      if (!windowStatus?.isOpen) {
+      setMessage('Attendance window is closed. Ask your teacher to open it.');
+      return;
+    }
   try {
     setStatus('processing');
     setMessage('Please blink naturally...');
@@ -119,7 +171,8 @@ const MarkAttendance = () => {
     setStatus('error');
     const msg  = error.response?.data?.message || 'Something went wrong';
     const step = error.response?.data?.step;
-
+    
+     if (step === 'window')      setMessage('❌ Window closed: ' + msg);
     if (step === 'liveness') setMessage('❌ Liveness: ' + msg);
     else if (step === 'recognition') setMessage('❌ Face: ' + msg);
     else if (step === 'geofence') setMessage('❌ Location: ' + msg);
@@ -147,6 +200,42 @@ const MarkAttendance = () => {
           <option disabled>No subjects found</option>
         )}
       </select>
+       {/* Window Status */}
+        {selectedSubject && windowStatus && (
+          <div className={`rounded-2xl p-4 border
+            ${windowStatus.isOpen
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'}`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full
+                  ${windowStatus.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+                />
+                <p className={`text-sm font-medium
+                  ${windowStatus.isOpen ? 'text-green-700' : 'text-red-700'}`}
+                >
+                  {windowStatus.isOpen
+                    ? 'Attendance window is OPEN'
+                    : 'Attendance window is CLOSED'}
+                </p>
+              </div>
+              {windowStatus.isOpen && timeLeft && (
+                <span className={`text-sm font-bold tabular-nums
+                  ${timeLeft.mins < 5 ? 'text-red-600' : 'text-green-600'}`}
+                >
+                  {String(timeLeft.mins).padStart(2,'0')}:
+                  {String(timeLeft.secs).padStart(2,'0')}
+                </span>
+              )}
+            </div>
+            {!windowStatus.isOpen && (
+              <p className="text-xs text-red-500 mt-1">
+                Ask your teacher to open the attendance window
+              </p>
+            )}
+          </div>
+        )}
       <video
         ref={videoRef}
         autoPlay

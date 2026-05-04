@@ -1,7 +1,7 @@
 // controllers/teacherController.js
-const User = require('../models/User');
-const Attendance = require('../models/Attendance');
-const Subject = require('../models/Subject');
+const User = require('../../model/userModel/userSchema.js');
+const Attendance = require('../../model/attendanceModel/attendanceSchema.js');
+const Subject = require('../../model/subjectModel/subjectSchema.js');
 
 // ─── GET PROFILE ──────────────────────────────────────────────
 const getProfile = async (req, res) => {

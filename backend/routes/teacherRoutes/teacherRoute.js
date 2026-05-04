@@ -1,7 +1,7 @@
 const teacherController = require('../../controller/teacher/teacherController.js')
 const express = require('express');
 const router = express.Router();
-
+const {authenticateToken} = require('../../middleware/authenticateToken.js')
 const {
     getProfile,
     getMyStudents,
@@ -11,7 +11,7 @@ const {
     getLowAttendanceStudents,
     exportAttendance
 } = teacherController;
-
+router.use(authenticateToken);
 router.get('/profile',getProfile);
 router.get('/students',getMyStudents);
 router.get('/all',getAllAttendance);

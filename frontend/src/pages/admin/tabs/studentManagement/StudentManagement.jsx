@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import API from '../../../../api/axios';
 
-function StudentManagement({ students, onRefresh }) {
+function StudentManagement({ students, onRefresh, onToggleStatus }) {
   const [search,    setSearch]    = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form,      setForm]      = useState({
@@ -31,10 +31,11 @@ function StudentManagement({ students, onRefresh }) {
 
   const handleToggle = async (id) => {
     try {
-      await API.put(`http://localhost:3000/api/admin/users/${id}/toggle-status`);
+      await API.put(`http://localhost:3000/api/admin/toggle-status/${id}`);
       onRefresh();
+      onToggleStatus(id);
     } catch (err) {
-      alert('Failed to update status');
+      alert(err.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -44,7 +45,7 @@ function StudentManagement({ students, onRefresh }) {
       await API.delete(`http://localhost:3000/api/admin/users/${id}`);
       onRefresh();
     } catch (err) {
-      alert('Failed to delete');
+      alert(err.response?.data?.message || 'Failed to delete');
     }
   };
 
