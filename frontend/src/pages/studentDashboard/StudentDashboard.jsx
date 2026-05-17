@@ -122,6 +122,12 @@ const StudentDashboard = () => {
               >
                 Profile
               </button>
+               <button
+                onClick={() => navigate('/enroll-face')}
+                className="text-gray-500 hover:text-gray-800 text-sm font-medium"
+              >
+                Enroll face
+              </button>
             </div>
 
             {/* User Info */}

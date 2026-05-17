@@ -111,7 +111,7 @@ const [loadingApprove, setLoadingApprove] = useState(null);
               >
                 {/* Avatar + Name */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center shrink-0">
                     <span className="text-yellow-600 font-bold text-lg">
                       {student.name?.charAt(0)?.toUpperCase()}
                     </span>

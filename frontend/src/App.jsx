@@ -24,6 +24,8 @@ import GeofenceConfig      from './pages/admin/tabs/geofenceConfig/GeofenceConfi
 import Reports             from './pages/admin/tabs/reports/Reports';
 
 import TeacherDashboard from './pages/teacher/teacherDashboard/TeacherDasboard';
+import ForgotPassword from './pages/forgetPassword/ForgetPassword';
+import ResetPassword from './pages/resetPassword/ResetPassword';
 export default function App() {
   return (
     <BrowserRouter>
@@ -31,6 +33,11 @@ export default function App() {
         {/* Public Routes */}
         <Route path="/login"              element={<StudentLogin />} />
         <Route path="/login/admin"        element={<AdminLogin />} />
+        <Route path='/student/forgot-password' element={<ForgotPassword/>}/>
+        <Route path='/admin/forgot-password' element={<ForgotPassword/>}/>
+        <Route path='/admin/reset-password/:token' element={<ResetPassword/>}/>
+        <Route path='/student/reset-password/:token' element={<ResetPassword/>}/>
+        <Route path='/teacher/reset-password/:token' element={<ResetPassword/>}/>
         <Route path="/accept-invite/:token" element={<AcceptInvite />} />
         <Route path="/" element={<Layout />}>
         {/* Student Routes */}
